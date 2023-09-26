@@ -1,14 +1,20 @@
 main:
         endbr64
-; start(1) ->     for (i = 0; i < 3; i++) ivector[i] = 1;
-        movabs  rax, 4294967297     # tmp88,
+        # Перемещаем значение из памяти в регистр
+        #   Значение загружается из локации .LC0
+        mov     rax, QWORD PTR .LC0[rip]  # tmp84,
+        # Установка значения 1 по смещению 8 от начала массива
         mov     DWORD PTR ivector[rip+8], 1       # ivector[2],
-        mov     QWORD PTR ivector[rip], rax       # MEM <...> [(int *)&ivector], tmp88
-; end(1) -> for (i = 0; i < 3; i++)
-        xor     eax, eax  #
+        # Установка значения 3 переменной i
         mov     DWORD PTR i[rip], 3       # i,
+        # Перемещение значения из регистра rax в начало массива
+        mov     QWORD PTR ivector[rip], rax       # MEM <...> [(int *)&ivector], tmp84
+        xor     eax, eax  #
         ret
 i:
         .zero   4
 ivector:
         .zero   12
+.LC0:
+        .long   1
+        .long   1
