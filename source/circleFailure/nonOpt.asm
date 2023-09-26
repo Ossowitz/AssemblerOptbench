@@ -6,30 +6,35 @@ main:
         endbr64
         push    rbp     #
         mov     rbp, rsp  #,
-; start(1) -> for (i = 0; i < 3; i++)
+        # Инициализируем переменную i
         mov     DWORD PTR i[rip], 0       # i,
+        # Переходим на проверку условия в .L2
         jmp     .L2       #
-; end(1) -> for (i = 0; i < 3; i++)
 .L3:
-; start -> ivector[i] = 1;
+        # Загружаем значение переменной i
         mov     eax, DWORD PTR i[rip]     # i.0_1, i
+        # Расширяем значение в регистре до 64 бит
         cdqe
+        # Вычисляем адрес элемента и сохраняем его
         lea     rdx, 0[0+rax*4]   # tmp89,
+        # Загружаем адрес массива
         lea     rax, ivector[rip] # tmp90,
+        # Устанавливаем значение 1
         mov     DWORD PTR [rdx+rax], 1    # ivector[i.0_1],
-; end -> ivector[i] = 1;
 
-; start(2) -> for (i = 0; i < 3; i++)
+        # Загружаем значение переменной i
         mov     eax, DWORD PTR i[rip]     # i.1_2, i
+        # Увеличваем значение на 1
         add     eax, 1    # _3,
+        # Сохраняем новое значение переменной
         mov     DWORD PTR i[rip], eax     # i, _3
-; end(2) -> for (i = 0; i < 3; i++)
 .L2:
-; start(3) -> for (i = 0; i < 3; i++)
+        # Загружаем значение переменной i
         mov     eax, DWORD PTR i[rip]     # i.2_4, i
+        # Сравниваем значение i с 2 (меньше или равно)
         cmp     eax, 2    # i.2_4,
+        # Если меньше или равно, то переходим в .L3
         jle     .L3       #,
         mov     eax, 0    # _8,
-; end(3) -> for (i = 0; i < 3; i++)
         pop     rbp       #
         ret
