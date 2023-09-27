@@ -1,28 +1,36 @@
 #include <stdio.h>
+#include <string.h>
 
-#define constant5 5
+#define max_vector    2
+#define constant5     5
 
-typedef unsigned char    uchar;
+typedef unsigned char uchar;
 
-int    i, j, k, l, m;
-int    i2, j2, k2;
-int    g3, h3, i3, k3, m3;
-int    i4, j4;
-int    i5, j5, k5;
+int i, j, k, l, m;
+int i2, j2, k2;
+int g3, h3, i3, k3, m3;
+int i4, j4;
+int i5, j5, k5;
 
 double flt_1, flt_2, flt_3, flt_4, flt_5, flt_6;
 
-int    ivector[ 3 ];
-uchar  ivector2[ 3 ];
-short  ivector4[ 6 ];
-int    ivector5[ 100 ];
+int ivector[3];
+uchar ivector2[3];
+short ivector4[6];
+int ivector5[100];
 
 #ifndef NO_PROTOTYPES
-void   dead_code( int, char * );
-void   unnecessary_loop( void );
-void   loop_jamming( int );
-void   loop_unrolling( int );
-int    jump_compression( int, int, int, int, int );
+
+void dead_code(int, char *);
+
+void unnecessary_loop(void);
+
+void loop_jamming(int);
+
+void loop_unrolling(int);
+
+int jump_compression(int, int, int, int, int);
+
 #else
 void   dead_code();
        void   unnecessary_loop();
@@ -31,7 +39,7 @@ void   dead_code();
        int    jump_compression();
 #endif
 
-int /* cdecl */  main( argc, argv )           /* optbench */
+int /* cdecl */  main(argc, argv)           /* optbench */
         int argc;
         char **argv;
 {
@@ -75,6 +83,26 @@ int /* cdecl */  main( argc, argv )           /* optbench */
     i4 = i * 1;
     i5 = i * 0;
 
+    // #ifndef NO_ZERO_DIVIDE
+    /*
+         *   Некоторые компиляторы распознают ошибку
+         *   деления на нуль и не генерируют объектный код
+         */
+    /*    i2 = i / 0;
+        flt_2 = flt_1 / 0.0;
+   #else
+        printf( "This compiler handles divide-by-zero as \
+                an error\n");
+   #endif
+        flt_3 = 2.4 / 1.0;
+        flt_4 = 1.0 + 0.0000001;
+        flt_5 = flt_6 * 0.0;
+    flt_6 = flt_2 * flt_3;*/
+
+    /* ──────────────────── *
+     │  Лишнее присваивание │
+     * ──────────────────── */
+
     k3 = 1;
     k3 = 1;
 
@@ -112,4 +140,27 @@ int /* cdecl */  main( argc, argv )           /* optbench */
         j5 = i5 + i2;
     else
         k5 = i5 + i2;
+
+    /* ──────────────────────────────────────────────── *
+     │  Проверка того, как компилятор генерирует адрес  │
+     │  переменной с константным индексом, размножает   │
+     │  копии и регистры                                │
+     * ──────────────────────────────────────────────── */
+
+    ivector[0] = 1;  /* генерация константного адреса */
+    ivector[i2] = 2; /* значение i2 должно быть скопировано*/
+    ivector[i2] = 2; /* копирование регистров */
+    ivector[2] = 3;  /* генарация константного адреса */
+
+
+    /* ───────────────────────────── *
+         │  Удаление общих подвыражений  │
+         * ───────────────────────────── */
+
+    if ((h3 + k3) < 0 || (h3 + k3) > 5)
+        printf("Common subexpression elimination\n");
+    else {
+        m3 = (h3 + k3) / i3;
+        g3 = i3 + (h3 + k3);
+    }
 }
