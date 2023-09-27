@@ -360,3 +360,51 @@ else {
 
 _Вместо занесения суммы h3 и k3 в два разных регистра, сумма присваивается только одно одному регистру, и все дальнейшие сравнения 
 происходят только с ним._
+
+## Вызов функции с аргументами
+
+### Код на языке C
+
+```c
+void dead_code( a, b )
+    int a;
+    char *b;
+{
+    int idead_store;
+    idead_store = a;
+    if( 0 )
+    printf( "%s\n", b );
+}
+			
+dead_code( 1, "This line should not be printed" );
+```
+
+### Неоптимизированный код
+
+```asm
+dead_code:
+        endbr64 
+        push    rbp  
+        mov     rbp, rsp 
+        mov     DWORD PTR -20[rbp], edi   
+        mov     QWORD PTR -32[rbp], rsi   
+        mov     eax, DWORD PTR -20[rbp]   
+        mov     DWORD PTR -4[rbp], eax   
+        nop     
+        pop     rbp      
+        ret  
+
+lea     rax, .LC3[rip]    
+        mov     rsi, rax  
+        mov     edi, 1    
+        call    dead_code       
+        mov     eax, 0    
+```
+
+### Оптимизированный код
+
+```c
+dead_code( 1, "This line should not be printed" );
+```
+
+_Поскольку условие в функции dead_code не выполняется, она не вызывается, соответственно, код не вызывается._
