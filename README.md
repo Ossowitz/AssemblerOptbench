@@ -166,3 +166,75 @@ mov     DWORD PTR k3[rip], 1
 ```
 
 _Второе присваивание игнорируется, так как оно дублируется._
+
+## Простой цикл
+
+### Кода на языке C
+
+```c
+#define constant5 5
+
+j5 = 0;
+k5 = 10000;
+do {
+    k5 = k5 - 1;
+    j5 = j5 + 1;
+    i5 = (k5 * 3) / (j5 * constant5);
+} while (k5 > 0)
+```
+
+### Неоптимизированный код
+
+```asm
+mov     DWORD PTR j5[rip], 0
+.L2:
+	        mov     eax, DWORD PTR k5[rip]
+		sub     eax, 1
+		mov     DWORD PTR k5[rip], eax
+		mov     eax, DWORD PTR j5[rip]
+		add     eax, 1
+		mov     DWORD PTR j5[rip], eax
+		mov     edx, DWORD PTR k5[rip]
+		mov     eax, edx
+		add     eax, eax
+		lea     ecx, [rax+rdx]
+		mov     edx, DWORD PTR j5[rip]
+		mov     eax, edx
+		sal     eax, 2
+		lea     esi, [rdx+rax]
+		mov     eax, ecx
+		cdq
+		idiv    esi
+		mov     DWORD PTR i5[rip], eax
+		mov     eax, DWORD PTR k5[rip]
+		test    eax, eax
+		jg      .L2
+		mov     eax, 0	
+```
+
+#### Комментарий относительно неоптимизированного кода:
+
+_Компилятор сохранил цикл, все операции умножения сохранены. Проверка условия выполнения цикла происходит
+в самом конце._
+
+### Оптимизированный код
+
+```asm
+mov     eax, DWORD PTR k5[rip]
+mov     edx, 1
+test    eax, eax
+cmovg   edx, eax
+sub     eax, edx
+lea     ecx, [rdx+rdx*4]
+mov     DWORD PTR j5[rip], edx
+mov     DWORD PTR k5[rip], eax
+lea     eax, [rax+rax*2]
+cdq
+idiv    ecx
+mov     DWORD PTR i5[rip], eax
+```
+
+#### Комментарий относительно оптимизированного кода:
+
+_Компилятор сначала проводит проверку условия, а лишь затем начинает производить операции
+Все остальные операции были сохранены._
