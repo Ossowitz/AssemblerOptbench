@@ -358,7 +358,8 @@ else {
 
 #### Комментарий относительно оптимизированного кода:
 
-_Вместо занесения суммы h3 и k3 в два разных регистра, сумма присваивается только одно одному регистру, и все дальнейшие сравнения 
+_Вместо занесения суммы h3 и k3 в два разных регистра, сумма присваивается только одно одному регистру, и все дальнейшие
+сравнения
 происходят только с ним._
 
 ## Вызов функции с аргументами
@@ -407,4 +408,94 @@ lea     rax, .LC3[rip]
 dead_code( 1, "This line should not be printed" );
 ```
 
-_Поскольку условие в функции dead_code не выполняется, она не вызывается, соответственно, код не вызывается._
+#### Комментарий относительно оптимизированного кода:
+
+_Поскольку условие в функции dead_code не выполняется, она не вызывается, соответственно, код не вызывается. 
+Проверка непостижимого кода и лишних присваиваний. Не должен генерироваться код._
+
+## loop_jamming
+
+### Код на языке C
+
+```c
+void loop_jamming( x )
+    int x;
+{
+    for( i = 0; i < 5; i++ )
+    k5 = x + j5 * i;
+    for( i = 0; i < 5; i++ )
+        i5 = x * k5 * i;
+}
+loop_jamming(7);
+```
+
+### Неоптимизированный код
+
+```asm
+loop_jamming:
+        endbr64
+        push    rbp    
+        mov     rbp, rsp 
+        mov     DWORD PTR -4[rbp], edi  
+        mov     DWORD PTR i[rip], 0       
+        jmp     .L2      
+.L3:
+        mov     edx, DWORD PTR j5[rip]    
+        mov     eax, DWORD PTR i[rip]     
+        imul    edx, eax        
+        mov     eax, DWORD PTR -4[rbp]   
+        add     eax, edx  
+        mov     DWORD PTR k5[rip], eax    
+        mov     eax, DWORD PTR i[rip]     
+        add     eax, 1    
+        mov     DWORD PTR i[rip], eax   
+.L2:
+        mov     eax, DWORD PTR i[rip]    
+        cmp     eax, 4   
+        jle     .L3    
+        mov     DWORD PTR i[rip], 0       
+        jmp     .L4       
+.L5:
+        mov     eax, DWORD PTR k5[rip]    
+        imul    eax, DWORD PTR -4[rbp] 
+        mov     edx, eax  
+        mov     eax, DWORD PTR i[rip]     
+        imul    eax, edx        
+        mov     DWORD PTR i5[rip], eax    
+        mov     eax, DWORD PTR i[rip]     
+        add     eax, 1    # _13,
+        mov     DWORD PTR i[rip], eax     
+.L4:
+        mov     eax, DWORD PTR i[rip]     
+        cmp     eax, 4    
+        jle     .L5      
+        nop
+        nop
+        pop     rbp     
+        ret
+.L21:   mov     edi, 7   
+        call    loop_jamming   
+        mov     eax, 0   
+```
+
+### Оптимизированный код
+
+```asm
+loop_jamming:
+        endbr64 
+        mov     DWORD PTR i[rip], 5      
+        mov     eax, DWORD PTR j5[rip]   
+        lea     eax, [rdi+rax*4] 
+        mov     DWORD PTR k5[rip], eax    
+        imul    eax, edi        
+        sal     eax, 2 
+        mov     DWORD PTR i5[rip], eax    
+        ret   
+mov     edi, 7   
+        call    loop_jamming
+```
+
+#### Комментарий относительно оптимизированного кода:
+
+_После оптимизации компилятор не слил два цикла воедино, однако в первом цикле произвёл лишь одну операцию присваивания, 
+а во втором цикле лишь зафиксировал для переменно i значение 0._
