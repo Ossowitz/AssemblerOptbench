@@ -1,18 +1,21 @@
 main:
         endbr64
-        mov     eax, DWORD PTR k5[rip]    # k5_lsm.7, k5
-        mov     edx, 1    # tmp103,
-        test    eax, eax        # k5_lsm.7
-        cmovg   edx, eax      # k5_lsm.7,, _13
-        sub     eax, edx  # _31, _13
-        lea     ecx, [rdx+rdx*4]  # tmp99,
-        mov     DWORD PTR j5[rip], edx    # j5, _13
-        mov     DWORD PTR k5[rip], eax    # k5, _31
-        lea     eax, [rax+rax*2]  # tmp96,
+        mov     eax, 10000
+        mov     ecx, 10000
+.L2:
+        sub     eax, 1
+        mov     edx, ecx
+        sub     edx, eax
+        test    eax, eax
+        jg      .L2 #,
+        mov     DWORD PTR k5[rip], eax
+        mov     DWORD PTR j5[rip], edx
+        lea     eax, [rax+rax*2]
+        lea     ecx, [rdx+rdx*4]
         cdq
-        idiv    ecx     # tmp99
-        mov     DWORD PTR i5[rip], eax    # i5, tmp100
-        xor     eax, eax  #
+        idiv    ecx
+        mov     DWORD PTR i5[rip], eax
+        mov     eax, 0
         ret
 i5:
         .zero   4
