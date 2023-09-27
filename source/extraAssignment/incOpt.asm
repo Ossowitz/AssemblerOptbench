@@ -1,0 +1,1 @@
+mov     DWORD PTR k3[rip], 1
