@@ -11,22 +11,22 @@ for (i = 0; i < 3; i++) ivector[i] = 1;
 ### Неоптимизированный код
 
 ```asm
-	mov     DWORD PTR i[rip], 0     # Инициализируем переменную i
-	jmp     .L2                     # Переходим на проверку условия в .L2
+mov     DWORD PTR i[rip], 0
+jmp     .L2
 .L3:
-	mov     eax, DWORD PTR i[rip]   # Загружаем значение переменной i
-	cdqe                            # Расширяем значение в регистре до 64 бит
-	lea     rdx, 0[0+rax*4]         # Вычисляем адрес элемента и сохраняем его
-	lea     rax, ivector[rip]       # Загружаем адрес массива
-	mov     DWORD PTR [rdx+rax], 1  # Устанавливаем значение 1
+mov     eax, DWORD PTR i[rip]
+cdqe
+lea     rdx, 0[0+rax*4]
+lea     rax, ivector[rip]
+mov     DWORD PTR [rdx+rax], 1
 	
-	mov     eax, DWORD PTR i[rip]   # Загружаем значение переменной i
-	add     eax, 1                  # Увеличиваем значение переменной на 1
-	mov     DWORD PTR i[rip], eax   # Сохраняем новое значение переменной 
+mov     eax, DWORD PTR i[rip]
+add     eax, 1 
+mov     DWORD PTR i[rip], eax
 .L2:
-	mov     eax, DWORD PTR i[rip]   # Загружаем значение переменной i
-	cmp     eax, 2                  # Сравниваем значение i с 2 (меньше или равно)
-	jle     .L3                     # Если меньше или равно, то переходим в .L3
+mov     eax, DWORD PTR i[rip]
+cmp     eax, 2
+jle     .L3
 ```
 
 #### Комментарий относительно неоптимизированного кода:
@@ -36,14 +36,13 @@ _В неоптимизированном варианте происходит 3
 ### Оптимизированный код
 
 ```asm
-                                    # Перемещаем значение из памяти в регистр
-    mov     rax, QWORD PTR .LC0[rip]    #   Загружаем значение из локации .LC0
-    mov     DWORD PTR ivector[rip+8], 1 # Устанавливаем значение 1 по смещению от начала массива
-    mov     DWORD PTR i[rip], 3         # Устанавливаем значение 2 переменной i
-    mov     QWORD PTR ivector[rip], rax # Перемещаем значение из регистра rax в начало массива
-.LC0:
-        .long   1
-        .long   1
+mov    rax, QWORD PTR .LC0[rip] 
+mov    DWORD PTR ivector[rip+8],1 
+mov    DWORD PTR i[rip], 3  
+mov    QWORD PTR ivector[rip], rax 
+.LC0: 
+       .long 1 
+       .long 1
 ```
 
 #### Комментарий относительно оптимизированного кода:
