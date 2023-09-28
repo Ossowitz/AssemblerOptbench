@@ -29,10 +29,6 @@ cmp     eax, 2
 jle     .L3
 ```
 
-#### Комментарий относительно неоптимизированного кода:
-
-_В неоптимизированном варианте происходит 3 проверки и 3 передачи управления_
-
 ### Оптимизированный код
 
 ```asm
@@ -45,12 +41,12 @@ mov    QWORD PTR ivector[rip], rax
        .long 1
 ```
 
-#### Комментарий относительно оптимизированного кода:
+#### Комментарий:
 
-_Фактическое использование цикла заменяется на размещение меток. В процессе разметки кода метки помещаются на близкое
-расстояние от инструкций.
-В метках могут размещаться директивы, которые объявляют константные значения. Использование констант позволяет
-предварительно загрузить значения._
+_В неоптимизированном варианте происходит 3 проверки и 3 передачи управления. При оптимизации использование цикла
+заменяется на размещение меток. В процессе разметки кода метки помещаются на близкое расстояние от инструкций. В метках
+могут размещаться директивы, которые объявляют константные значение. Использование констант позволяет предварительно
+загрузить значения._
 
 ## Размножение констант и копий
 
@@ -73,65 +69,61 @@ if( i2 < j4 && i4 < j4 ){
 ### Неоптимизированный код
 
 ```asm
-.LC0:
-        .string "Hello"
-	mov     DWORD PTR j4[rip], 2
-	mov     edx, DWORD PTR i2[rip]
-	mov     eax, DWORD PTR j4[rip]
-	cmp     edx, eax
-	jge     .L2
-	mov     edx, DWORD PTR i4[rip]
-	mov     eax, DWORD PTR j4[rip]
-	cmp     edx, eax
-	jge     .L2
-	mov     DWORD PTR i2[rip], 2
-	lea     rax, .LC0[rip]
-	mov     rdi, rax
-	mov     eax, 0
-	call    printf@PLT
-.L2:
-	mov     eax, DWORD PTR k5[rip]
-	mov     DWORD PTR j4[rip], eax
-	mov     eax, DWORD PTR j4[rip]
-	cmp     edx, eax
-	jge     .L3
-	mov     edx, DWORD PTR i4[rip]
-	mov     eax, DWORD PTR j4[rip]
-	cmp     edx, eax
-	jge     .L3
-	mov     DWORD PTR i5[rip], 3
-	lea     rax, .LC0[rip]
-	mov     rdi, rax
-	mov     eax, 0
-	call    printf@PLT
-.L3:
-    mov     eax, 0
+.LC0: 
+              .string "Hello" 
+ mov     DWORD PTR j4[rip], 2 
+ mov     edx, DWORD PTR i2[rip] 
+ mov     eax, DWORD PTR j4[rip] 
+ cmp     edx, eax 
+ jge       .L2 
+ mov     edx, DWORD PTR i4[rip] 
+ mov     eax, DWORD PTR j4[rip] 
+ cmp     edx, eax 
+ jge       .L2 
+ mov     DWORD PTR i2[rip], 2 
+ lea       rax, .LC0[rip] 
+ mov     rdi, rax 
+ mov     eax, 0 
+ call       printf@PLT 
+.L2: 
+ mov     eax, DWORD PTR k5[rip] 
+ mov     DWORD PTR j4[rip], eax 
+ mov     eax, DWORD PTR j4[rip] 
+ cmp     edx, eax 
+ jge       .L3 
+ mov     edx, DWORD PTR i4[rip] 
+ mov     eax, DWORD PTR j4[rip] 
+ cmp     edx, eax 
+ jge       .L3 
+ mov     DWORD PTR i5[rip], 3 
+ lea       rax, .LC0[rip] 
+ mov     rdi, rax 
+ mov     eax, 0 
+ call     printf@PLT 
+.L3: 
+ mov     eax, 0 
 ```
-
-#### Комментарий относительно неоптимизированного кода:
-
-_В неоптимизированном варианте идёт последовательное сравнение переменных._
 
 ### Оптимизированный код
 
 ```asm
-	mov     eax, DWORD PTR k5[rip]
-	mov     DWORD PTR j4[rip], eax
-	cmp     eax, 6
-	jle     .L4
-	cmp     eax, DWORD PTR i4[rip]
-	jg      .L8
-.L8:
-	mov     DWORD PTR i5[rip], 3
+mov      eax, DWORD PTR k5[rip] 
+mov      DWORD PTR j4[rip], eax 
+cmp      eax, 6 
+jle         .L4 
+cmp      eax, DWORD PTR i4[rip] 
+jg          .L8 
+.L8: 
+mov     DWORD PTR i5[rip], 3 
 ```
 
-#### Комментарий относительно оптимизированного кода:
+#### Комментарий:
 
-_В оптимизированном варианте программы первый условный блок игнорируется из-за того, что условие заведомо
-неверно. Однако для второго блока код генерируется не смотря на то, что если условие не выполнится.
-Возможно, это связано с тем, что перед первым условием мы передаём в переменную j4 конкретное значение,
-а во втором приравниваем её к другой переменной, из-за чего компилятор вместо того, чтобы найти значение
-переменной k5, просто генерирует код для условного блока._
+_В неоптимизированном варианте идёт последовательное сравнение переменных. В то время как в оптимизированном первый
+условный блок игнорируется из-за того, что условие заведомо неверно. Однако для второго блока код генерируется не смотря
+на то, что если условие не выполнится. Возможно, это связано с тем, что перед первым условием мы передаём в переменную
+j4 конкретное значение, а во втором приравниваем её к другой переменной, из-за чего компилятор вместо того, чтобы найти
+значение переменной k5, просто генерирует код для условного блока._
 
 ## Лишнее присваивание
 
@@ -149,15 +141,13 @@ mov     DWORD PTR k3[rip], 1
 mov     DWORD PTR k3[rip], 1
 ```
 
-#### Комментарий относительно неоптимизированного кода:
-
-_Оба присваивания происходят._
-
 ### Оптимизированный код
 
 ```asm
 mov     DWORD PTR k3[rip], 1
 ```
+
+#### Комментарий
 
 _Второе присваивание игнорируется, так как оно дублируется._
 
@@ -180,64 +170,59 @@ do {
 ### Неоптимизированный код
 
 ```asm
-        mov     DWORD PTR j5[rip], 0      
-        mov     DWORD PTR k5[rip], 10000  
-.L2:
-        mov     eax, DWORD PTR k5[rip]    
-        sub     eax, 1   
-        mov     DWORD PTR k5[rip], eax    
-        mov     eax, DWORD PTR j5[rip]   
-        add     eax, 1  
-        mov     DWORD PTR j5[rip], eax    
-        mov     edx, DWORD PTR k5[rip]   
-        mov     eax, edx  
-        add     eax, eax  
-        lea     ecx, [rax+rdx]   
-        mov     edx, DWORD PTR j5[rip]   
-        mov     eax, edx 
-        sal     eax, 2    
-        lea     esi, [rdx+rax]    
-        mov     eax, ecx  
-        cdq
-        idiv    esi    
-        mov     DWORD PTR i5[rip], eax    
-        mov     eax, DWORD PTR k5[rip]    
-        test    eax, eax        
-        jg      .L2 
-        mov     eax, 0   
+mov	DWORD PTR j5[rip], 0  
+mov	DWORD PTR k5[rip], 10000  
+.L2: 
+mov	eax, DWORD PTR k5[rip]  
+sub	eax, 1  
+mov	DWORD PTR k5[rip], eax  
+mov	eax, DWORD PTR j5[rip]  
+add	eax, 1  
+mov	DWORD PTR j5[rip], eax  
+mov	edx, DWORD PTR k5[rip]  
+mov	eax, edx  
+add	eax, eax  
+lea	ecx, [rax+rdx]  
+mov	edx, DWORD PTR j5[rip]  
+mov	eax, edx  
+sal	eax, 2  
+lea	esi, [rdx+rax]  
+mov	eax, ecx  
+cdq 
+idiv 	esi  
+mov	DWORD PTR i5[rip], eax  
+mov	eax, DWORD PTR k5[rip]  
+test	eax, eax  
+jg	.L2  
+mov	eax, 0 
 ```
-
-#### Комментарий относительно неоптимизированного кода:
-
-_Компилятор сохранил цикл, все операции умножения сохранены. Проверка условия выполнения цикла происходит
-в самом конце. Операция вычитания и умножения происходит за счёт использования дополнительного регистра: в регистр
-копируется значение переменной. Изменяется значение регистра, а затем копируется обратно в переменную._
 
 ### Оптимизированный код
 
 ```asm
-        mov     eax, 10000        
-        mov     ecx, 10000        
-.L2:
-        sub     eax, 1   
-        mov     edx, ecx 
-        sub     edx, eax 
-        test    eax, eax       
-        jg      .L2 #,
-        mov     DWORD PTR k5[rip], eax    
-        mov     DWORD PTR j5[rip], edx   
-        lea     eax, [rax+rax*2]  
-        lea     ecx, [rdx+rdx*4]  
-        cdq
-        idiv    ecx    
-        mov     DWORD PTR i5[rip], eax    
-        mov     eax, 0    
+mov	eax, 10000  
+mov	ecx, 10000  
+.L2: 
+sub	eax, 1  
+mov	edx, ecx  
+sub	edx, eax  
+test	eax, eax  
+jg	.L2 #, 
+mov	DWORD PTR k5[rip], eax  
+mov	DWORD PTR j5[rip], edx  
+lea	eax, [rax+rax*2]  
+lea	ecx, [rdx+rdx*4]  
+cdq 
+idiv	ecx  
+mov	DWORD PTR i5[rip], eax  
+mov	eax, 0 
 ```
 
-#### Комментарий относительно оптимизированного кода:
+#### Комментарий:
 
-_Цикл сохранился, однако операции умножения чисел были заменены на использование умножения регистров. Также появилось
-знаковое деление регистров. Компилятор заменил использование инструкции add: в самом начале происходит копирование
+_В неоптимизированном варианте компилятор операция вычитания и умножения происходит за счёт использования
+дополнительного регистра: в регистр копируется значение переменной, изменяется, а затем копируется обратно в переменную.
+В оптимизированном варианте компилятор заменил использование инструкции add: в самом начале происходит копирование
 значения k5 в регистр ecx. Далее из k5 вычитают 1 и помещают в регистр eax, в регистр edx копируется значение временной
 переменной, затем из j5 вычитают eax. Это позволяет копировать значения из одного места в другое, что влечёт
 незамедлительность операции._
@@ -256,27 +241,23 @@ else
 ### Неоптимизированный код
 
 ```asm
-L9:
-        mov     eax, DWORD PTR i[rip]
-        cmp     eax, 9
-        jg      .L11
-        mov     edx, DWORD PTR i5[rip]
-        mov     eax, DWORD PTR i2[rip]
-        add     eax, edx
-        mov     DWORD PTR j5[rip], eax
-        jmp     .L12
-.L11:
-        mov     edx, DWORD PTR i5[rip]
-        mov     eax, DWORD PTR i2[rip]
-        add     eax, edx
-        mov     DWORD PTR k5[rip], eax
-.L12:
-        mov     eax, 0
+L9: 
+mov	eax, DWORD PTR i[rip] 
+cmp	eax, 9 
+jg	.L11 
+mov	edx, DWORD PTR i5[rip] 
+mov	eax, DWORD PTR i2[rip] 
+add	eax, edx 
+mov	DWORD PTR j5[rip], eax 
+jmp	.L12 
+.L11: 
+mov	edx, DWORD PTR i5[rip] 
+mov	eax, DWORD PTR i2[rip] 
+add	eax, edx 
+mov	DWORD PTR k5[rip], eax 
+.L12: 
+mov	eax, 0 
 ```
-
-#### Комментарий относительно неоптимизированного кода:
-
-_Условия не игнорируются, переменные складываются._
 
 ### Оптимизированный код
 
@@ -284,7 +265,7 @@ _Условия не игнорируются, переменные склады
 mov     DWORD PTR k5[rip], 5
 ```
 
-#### Комментарий относительно оптимизированного кода:
+#### Комментарий:
 
 _Игнорируется условие, которое не выполняется, а также вместо сложения двух переменных, одна из которых равняется нулю,
 происходит приравнивание к ненулевой переменной._
@@ -305,54 +286,54 @@ else {
 ### Неоптимизированный код
 
 ```asm
-        mov     edx, DWORD PTR h3[rip]
-        mov     eax, DWORD PTR k3[rip]
-        add     eax, edx
-        test    eax, eax
-        js      .L13
-        mov     edx, DWORD PTR h3[rip]
-        mov     eax, DWORD PTR k3[rip]
-        add     eax, edx
-        cmp     eax, 5
-        jle     .L14
-.L13:
-        lea     rax, .LC2[rip]
-        mov     rdi, rax
-        call    puts@PLT
-        jmp     .L15
-.L14:
-        mov     edx, DWORD PTR h3[rip]
-        mov     eax, DWORD PTR k3[rip]
-        add     eax, edx
-        mov     esi, DWORD PTR i3[rip]
-        cdq
-        idiv    esi
-        mov     DWORD PTR m3[rip], eax
-        mov     edx, DWORD PTR h3[rip]
-        mov     eax, DWORD PTR k3[rip]
-        add     edx, eax
-        mov     eax, DWORD PTR i3[rip]
-        add     eax, edx
-        mov     DWORD PTR g3[rip], eax
-.L15:
-        mov     eax, 0
+mov	edx, DWORD PTR h3[rip] 
+mov	eax, DWORD PTR k3[rip] 
+add	eax, edx 
+test	eax, eax 
+js	.L13 
+mov	edx, DWORD PTR h3[rip] 
+mov	eax, DWORD PTR k3[rip] 
+add	eax, edx 
+cmp	eax, 5 
+jle	.L14 
+.L13: 
+lea	rax, .LC2[rip] 
+mov	rdi, rax 
+call	puts@PLT 
+jmp	.L15 
+.L14: 
+mov	edx, DWORD PTR h3[rip] 
+mov	eax, DWORD PTR k3[rip] 
+add	eax, edx 
+mov	esi, DWORD PTR i3[rip] 
+cdq 
+idiv	esi 
+mov	DWORD PTR m3[rip], eax 
+mov	edx, DWORD PTR h3[rip] 
+mov	eax, DWORD PTR k3[rip] 
+add	edx, eax 
+mov	eax, DWORD PTR i3[rip] 
+add	eax, edx 
+mov	DWORD PTR g3[rip], eax 
+.L15: 
+mov	eax, 0 
 ```
 
 ### Оптимизированный код
 
 ```asm
-        mov     ecx, DWORD PTR h3[rip]    # h3.36_25, h3
-        lea     edx, 1[rcx]       # _26,
-        cmp     edx, 5    # _26,
-        ja      .L10        #,
-        movsx   rax, edx      # _26, _26
-        sar     edx, 31   # tmp119,
-        add     ecx, 4    # tmp121,
-        imul    rax, rax, 1431655766    # tmp117, _26,
-        mov     DWORD PTR g3[rip], ecx    # g3, tmp121
-        shr     rax, 32   # tmp118,
-        sub     eax, edx  # tmp120, tmp119
-        mov     DWORD PTR m3[rip], eax    # m3, tmp120
+mov	ecx, DWORD PTR h3[rip]  
+lea	edx, 1[rcx]  
+cmp	edx, 5  
+ja	.L10  
+movsx	rax, edx  
+sar	edx, 31  
+add	ecx, 4  
+imul	rax, rax, 1431655766  
+mov	DWORD PTR g3[rip], ecx  
+shr	rax, 32  
+sub	eax, edx  
+mov	DWORD PTR m3[rip], eax 
 ```
 
 #### Комментарий относительно оптимизированного кода:
@@ -382,23 +363,23 @@ dead_code( 1, "This line should not be printed" );
 ### Неоптимизированный код
 
 ```asm
-dead_code:
-        endbr64 
-        push    rbp  
-        mov     rbp, rsp 
-        mov     DWORD PTR -20[rbp], edi   
-        mov     QWORD PTR -32[rbp], rsi   
-        mov     eax, DWORD PTR -20[rbp]   
-        mov     DWORD PTR -4[rbp], eax   
-        nop     
-        pop     rbp      
-        ret  
-
-lea     rax, .LC3[rip]    
-        mov     rsi, rax  
-        mov     edi, 1    
-        call    dead_code       
-        mov     eax, 0    
+dead_code: 
+endbr64  
+push	rbp  
+mov	rbp, rsp  
+mov	DWORD PTR -20[rbp], edi  
+mov	QWORD PTR -32[rbp], rsi  
+mov	eax, DWORD PTR -20[rbp]  
+mov	DWORD PTR -4[rbp], eax  
+nop  
+pop	rbp  
+ret  
+ 
+lea	rax, .LC3[rip]  
+mov	rsi, rax  
+mov	edi, 1  
+call	dead_code  
+mov	eax, 0 
 ```
 
 ### Оптимизированный код
@@ -409,7 +390,7 @@ dead_code( 1, "This line should not be printed" );
 
 #### Комментарий относительно оптимизированного кода:
 
-_Поскольку условие в функции dead_code не выполняется, она не вызывается, соответственно, код не вызывается. 
+_Поскольку условие в функции dead_code не выполняется, она не вызывается, соответственно, код не вызывается.
 Проверка непостижимого кода и лишних присваиваний. Не должен генерироваться код._
 
 ## loop_jamming
@@ -431,73 +412,72 @@ loop_jamming(7);
 ### Неоптимизированный код
 
 ```asm
-loop_jamming:
-        endbr64
-        push    rbp    
-        mov     rbp, rsp 
-        mov     DWORD PTR -4[rbp], edi  
-        mov     DWORD PTR i[rip], 0       
-        jmp     .L2      
-.L3:
-        mov     edx, DWORD PTR j5[rip]    
-        mov     eax, DWORD PTR i[rip]     
-        imul    edx, eax        
-        mov     eax, DWORD PTR -4[rbp]   
-        add     eax, edx  
-        mov     DWORD PTR k5[rip], eax    
-        mov     eax, DWORD PTR i[rip]     
-        add     eax, 1    
-        mov     DWORD PTR i[rip], eax   
-.L2:
-        mov     eax, DWORD PTR i[rip]    
-        cmp     eax, 4   
-        jle     .L3    
-        mov     DWORD PTR i[rip], 0       
-        jmp     .L4       
-.L5:
-        mov     eax, DWORD PTR k5[rip]    
-        imul    eax, DWORD PTR -4[rbp] 
-        mov     edx, eax  
-        mov     eax, DWORD PTR i[rip]     
-        imul    eax, edx        
-        mov     DWORD PTR i5[rip], eax    
-        mov     eax, DWORD PTR i[rip]     
-        add     eax, 1    # _13,
-        mov     DWORD PTR i[rip], eax     
-.L4:
-        mov     eax, DWORD PTR i[rip]     
-        cmp     eax, 4    
-        jle     .L5      
-        nop
-        nop
-        pop     rbp     
-        ret
-.L21:   mov     edi, 7   
-        call    loop_jamming   
-        mov     eax, 0   
+loop_jamming: 
+endbr64 
+push	rbp  
+mov	rbp, rsp  
+mov	DWORD PTR -4[rbp], edi  
+mov	DWORD PTR i[rip], 0  
+jmp	.L2  
+.L3: 
+mov	edx, DWORD PTR j5[rip]  
+mov	eax, DWORD PTR i[rip]  
+imul	edx, eax  
+mov	eax, DWORD PTR -4[rbp]  
+add	eax, edx  
+mov	DWORD PTR k5[rip], eax  
+mov	eax, DWORD PTR i[rip]  
+add	eax, 1  
+mov	DWORD PTR i[rip], eax  
+.L2: 
+mov	eax, DWORD PTR i[rip]  
+cmp	eax, 4  
+jle	.L3  
+mov	DWORD PTR i[rip], 0  
+jmp	.L4  
+.L5: 
+mov	eax, DWORD PTR k5[rip]  
+imul	eax, DWORD PTR -4[rbp]  
+mov	edx, eax  
+mov	eax, DWORD PTR i[rip]  
+imul	eax, edx  
+mov	DWORD PTR i5[rip], eax  
+mov	eax, DWORD PTR i[rip]  
+add	eax, 1 # _13, 
+mov	DWORD PTR i[rip], eax  
+.L4: 
+mov	eax, DWORD PTR i[rip]  
+cmp	eax, 4  
+jle	.L5  
+nop 
+nop 
+pop	rbp  
+ret 
+.L21:	mov edi, 7  
+call	loop_jamming  
+mov	eax, 0 
 ```
 
 ### Оптимизированный код
 
 ```asm
-loop_jamming:
-        endbr64 
-        mov     DWORD PTR i[rip], 5      
-        mov     eax, DWORD PTR j5[rip]   
-        lea     eax, [rdi+rax*4] 
-        mov     DWORD PTR k5[rip], eax    
-        imul    eax, edi        
-        sal     eax, 2 
-        mov     DWORD PTR i5[rip], eax    
-        ret   
-mov     edi, 7   
-        call    loop_jamming
+loop_jamming: 
+mov	DWORD PTR i[rip], 5  
+mov	eax, DWORD PTR j5[rip]  
+lea	eax, [rdi+rax*4]  
+mov	DWORD PTR k5[rip], eax  
+imul	eax, edi  
+sal	eax, 2  
+mov	DWORD PTR i5[rip], eax  
+ret  
+mov	edi, 7  
+call	loop_jamming 
 ```
 
 #### Комментарий относительно оптимизированного кода:
 
-_После оптимизации компилятор не слил два цикла воедино, однако в первом цикле произвёл лишь одну операцию присваивания, 
-а во втором цикле лишь зафиксировал для переменно i значение 0._
+_После оптимизации компилятор не слил два цикла воедино, однако в первом цикле произвёл лишь одну операцию присваивания,
+а во втором цикле лишь зафиксировал для переменной i значение 0._
 
 ## jump_compression
 
@@ -527,7 +507,7 @@ int jump_compression(i, j, k, l, m)
     else
         i += j;
     return (i + j + k + l + m);
-} /* Конец jump_compression */
+}
 ```
 
 ### Неоптимизированный код
@@ -584,76 +564,77 @@ jump_compression:
 ### Оптимизированный код
 
 ```asm
-jump_compression:
-        cmp     esi, edi  # j, i
-        jle     .L4       #,
-        cmp     ecx, r8d  # l, m
-        jl      .L22        #,
-        cmp     edx, ecx  # k, l
-        jge     .L11      #,
-.L10:
-        cmp     edx, esi  # k, j
-        jle     .L23      #,
-        cmp     edi, esi  # i, j
-        jge     .L4       #,
-.L13:
-        jmp     .L13      #
-.L23:
-        add     esi, edx  # j, k
-        cmp     edi, esi  # i, j
-        jl      .L10        #,
-.L4:
-        add     edi, esi  # i, j
-.L26:
-        lea     eax, [rdi+rsi]    # tmp92,
-        add     eax, edx  # tmp93, k
-        add     eax, ecx  # tmp94, l
-        add     eax, r8d  # tmp91, m
-        ret     
-.L24:
-        add     esi, edx  # j, k
-        cmp     edi, esi  # i, j
-        jge     .L4       #,
-.L11:
-        cmp     edx, esi  # k, j
-        jle     .L24      #,
-.L7:
-        add     edx, ecx  # k, l
-        lea     eax, [rdi+rsi]    # tmp92,
-        add     eax, edx  # tmp93, k
-        add     eax, ecx  # tmp94, l
-        add     eax, r8d  # tmp91, m
-        ret     
-.L22:
-        cmp     edx, ecx  # k, l
-        jge     .L8       #,
-.L6:
-        cmp     edx, esi  # k, j
-        jle     .L14      #,
-        lea     eax, [rdi+rsi]    # tmp92,
-        add     ecx, r8d  # l, m
-        add     eax, edx  # tmp93, k
-        add     eax, ecx  # tmp94, l
-        add     eax, r8d  # tmp91, m
-        ret     
-.L25:
-        add     esi, edx  # j, k
-        cmp     edi, esi  # i, j
-        jge     .L4       #,
-.L8:
-        cmp     edx, esi  # k, j
-        jg      .L7 #,
-        jmp     .L25      #
-.L14:
-        add     esi, edx  # j, k
-        cmp     edi, esi  # i, j
-        jl      .L6 #,
-        add     edi, esi  # i, j
-        jmp     .L26      #
+jump_compression: 
+cmp	esi, edi 
+jle	.L4 
+cmp	ecx, r8d 
+jl	.L22 
+cmp	edx, ecx # k, l 
+jge	.L11 #, 
+.L10: 
+cmp	edx, esi # k, j 
+jle	.L23 #, 
+cmp	edi, esi # i, j 
+jge	.L4 #, 
+.L13: 
+jmp	.L13 # 
+.L23: 
+add	esi, edx # j, k 
+cmp	edi, esi # i, j 
+jl	.L10 #, 
+.L4: 
+add	edi, esi # i, j 
+.L26: 
+lea	eax, [rdi+rsi] # tmp92, 
+add	eax, edx # tmp93, k 
+add	eax, ecx # tmp94, l 
+add	eax, r8d # tmp91, m 
+ret  
+.L24: 
+add	esi, edx # j, k 
+cmp	edi, esi # i, j 
+jge	.L4 #, 
+.L11: 
+cmp	edx, esi # k, j 
+jle	.L24 #, 
+.L7: 
+add	edx, ecx # k, l 
+lea	eax, [rdi+rsi] # tmp92, 
+add	eax, edx # tmp93, k 
+add	eax, ecx # tmp94, l 
+add	eax, r8d # tmp91, m 
+ret  
+.L22: 
+cmp	edx, ecx # k, l 
+jge	.L8 #, 
+.L6: 
+cmp	edx, esi # k, j 
+jle	.L14 #, 
+lea	eax, [rdi+rsi] # tmp92, 
+add	ecx, r8d # l, m 
+add	eax, edx # tmp93, k 
+add	eax, ecx # tmp94, l 
+add	eax, r8d # tmp91, m 
+ret  
+.L25 
+
+add	esi, edx # j, k 
+cmp	edi, esi # i, j 
+jge	.L4 #, 
+.L8: 
+cmp	edx, esi # k, j 
+jg	.L7 #, 
+jmp	.L25 # 
+.L14: 
+add	esi, edx # j, k 
+cmp	edi, esi # i, j 
+jl	.L6 #, 
+add	edi, esi # i, j 
+jmp	.L26 # 
 ```
 
 #### Комментарий относительно оптимизированного кода:
 
 _Сжимается цепочка переходов: после сравнения j и i, сразу происходит сравнение l и m.
-В зависимости от исхода сравнения, происходит переход к следующему. Также не выполняются лищние 
+В зависимости от исхода сравнения происходит переход к следующему. Также не выполняются лишние
 присваивания за счёт невыполнения проверок._
