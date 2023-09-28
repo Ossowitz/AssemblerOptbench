@@ -499,3 +499,160 @@ mov     edi, 7
 
 _После оптимизации компилятор не слил два цикла воедино, однако в первом цикле произвёл лишь одну операцию присваивания, 
 а во втором цикле лишь зафиксировал для переменно i значение 0._
+
+## jump_compression
+
+### Код на языке C
+
+```c
+jump_compression(1, 2, 3, 4, 5);
+
+int jump_compression(i, j, k, l, m)
+        int i, j, k, l, m;
+{
+    beg_1:
+    if (i < j)
+        if (j < k)
+            if (k < l)
+                if (l < m)
+                    l += m;
+                else
+                    goto end_1;
+            else
+                k += l;
+        else {
+            j += k;
+            end_1:
+            goto beg_1;
+        }
+    else
+        i += j;
+    return (i + j + k + l + m);
+} /* Конец jump_compression */
+```
+
+### Неоптимизированный код
+
+```asm
+jump_compression:
+        mov     DWORD PTR -4[rbp], edi    # i, i
+        mov     DWORD PTR -8[rbp], esi    # j, j
+        mov     DWORD PTR -12[rbp], edx   # k, k
+        mov     DWORD PTR -16[rbp], ecx   # l, l
+        mov     DWORD PTR -20[rbp], r8d   # m, m
+.L4:
+        mov     eax, DWORD PTR -4[rbp]    # tmp87, i
+        cmp     eax, DWORD PTR -8[rbp]    # tmp87, j
+        jge     .L5       #,
+        mov     eax, DWORD PTR -8[rbp]    # tmp88, j
+        cmp     eax, DWORD PTR -12[rbp]   # tmp88, k
+        jge     .L6       #,
+        mov     eax, DWORD PTR -12[rbp]   # tmp89, k
+        cmp     eax, DWORD PTR -16[rbp]   # tmp89, l
+        jge     .L7       #,
+        mov     eax, DWORD PTR -16[rbp]   # tmp90, l
+        cmp     eax, DWORD PTR -20[rbp]   # tmp90, m
+        jge     .L12      #,
+        mov     eax, DWORD PTR -20[rbp]   # tmp91, m
+        add     DWORD PTR -16[rbp], eax   # l, tmp91
+        jmp     .L9       #
+.L7:
+        mov     eax, DWORD PTR -16[rbp]   # tmp92, l
+        add     DWORD PTR -12[rbp], eax   # k, tmp92
+        jmp     .L9       #
+.L6:
+        mov     eax, DWORD PTR -12[rbp]   # tmp93, k
+        add     DWORD PTR -8[rbp], eax    # j, tmp93
+        jmp     .L4       #
+.L12:
+        nop     
+        jmp     .L4       #
+.L5:
+        mov     eax, DWORD PTR -8[rbp]    # tmp94, j
+        add     DWORD PTR -4[rbp], eax    # i, tmp94
+.L9:
+        mov     edx, DWORD PTR -4[rbp]    # tmp95, i
+        mov     eax, DWORD PTR -8[rbp]    # tmp96, j
+        add     edx, eax  # _1, tmp96
+        mov     eax, DWORD PTR -12[rbp]   # tmp97, k
+        add     edx, eax  # _2, tmp97
+        mov     eax, DWORD PTR -16[rbp]   # tmp98, l
+        add     edx, eax  # _3, tmp98
+        mov     eax, DWORD PTR -20[rbp]   # tmp99, m
+        add     eax, edx  # _18, _3
+```
+
+### Оптимизированный код
+
+```asm
+jump_compression:
+        cmp     esi, edi  # j, i
+        jle     .L4       #,
+        cmp     ecx, r8d  # l, m
+        jl      .L22        #,
+        cmp     edx, ecx  # k, l
+        jge     .L11      #,
+.L10:
+        cmp     edx, esi  # k, j
+        jle     .L23      #,
+        cmp     edi, esi  # i, j
+        jge     .L4       #,
+.L13:
+        jmp     .L13      #
+.L23:
+        add     esi, edx  # j, k
+        cmp     edi, esi  # i, j
+        jl      .L10        #,
+.L4:
+        add     edi, esi  # i, j
+.L26:
+        lea     eax, [rdi+rsi]    # tmp92,
+        add     eax, edx  # tmp93, k
+        add     eax, ecx  # tmp94, l
+        add     eax, r8d  # tmp91, m
+        ret     
+.L24:
+        add     esi, edx  # j, k
+        cmp     edi, esi  # i, j
+        jge     .L4       #,
+.L11:
+        cmp     edx, esi  # k, j
+        jle     .L24      #,
+.L7:
+        add     edx, ecx  # k, l
+        lea     eax, [rdi+rsi]    # tmp92,
+        add     eax, edx  # tmp93, k
+        add     eax, ecx  # tmp94, l
+        add     eax, r8d  # tmp91, m
+        ret     
+.L22:
+        cmp     edx, ecx  # k, l
+        jge     .L8       #,
+.L6:
+        cmp     edx, esi  # k, j
+        jle     .L14      #,
+        lea     eax, [rdi+rsi]    # tmp92,
+        add     ecx, r8d  # l, m
+        add     eax, edx  # tmp93, k
+        add     eax, ecx  # tmp94, l
+        add     eax, r8d  # tmp91, m
+        ret     
+.L25:
+        add     esi, edx  # j, k
+        cmp     edi, esi  # i, j
+        jge     .L4       #,
+.L8:
+        cmp     edx, esi  # k, j
+        jg      .L7 #,
+        jmp     .L25      #
+.L14:
+        add     esi, edx  # j, k
+        cmp     edi, esi  # i, j
+        jl      .L6 #,
+        add     edi, esi  # i, j
+        jmp     .L26      #
+```
+
+#### Комментарий относительно оптимизированного кода:
+
+_._
