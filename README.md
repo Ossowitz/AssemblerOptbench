@@ -322,6 +322,24 @@ mov	eax, 0
 ### Оптимизированный код
 
 ```asm
+LC4:  
+
+.string "Common subexpression elimination"  
+
+.L19:  
+
+lea	rdi, .LC4[rip] 
+
+call	puts@PLT 
+
+jmp .L10 
+
+.L10:  
+
+mov	DWORD PTR i4[rip], 0 
+
+lea	rbp, ivector2[rip] 
+
 mov	ecx, DWORD PTR h3[rip]  
 lea	edx, 1[rcx]  
 cmp	edx, 5  
