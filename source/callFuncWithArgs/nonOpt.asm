@@ -1,17 +1,28 @@
-dead_code:
+        section .text
+        global _start
+
+_dead_code:
         endbr64
+
         push    rbp
         mov     rbp, rsp
-        mov     DWORD PTR -20[rbp], edi
-        mov     QWORD PTR -32[rbp], rsi
-        mov     eax, DWORD PTR -20[rbp]
-        mov     DWORD PTR -4[rbp], eax
+
+        mov     DWORD [rbp-20], edi
+        mov     QWORD [rbp-32], rsi
+
+        mov     eax, DWORD [rbp-20]
+        mov     DWORD [rbp-4], eax
+
         nop
+
         pop     rbp
         ret
 
-lea     rax, .LC3[rip]
+_start:
+        lea     rax, [rel .LC3]
         mov     rsi, rax
         mov     edi, 1
-        call    dead_code
+        call    _dead_code
+
         mov     eax, 0
+        ret
