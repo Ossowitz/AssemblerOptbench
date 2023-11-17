@@ -1,1 +1,1 @@
-mov     DWORD PTR k5[rip], 5
+mov     DWORD [rip+k5], 5
